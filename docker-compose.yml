@@ -1,32 +1,14 @@
 version: "3.9"
 
-# ─────────────────────────────────────────────────────────────
-# Services: nginx · frontend · backend · postgres
-# Network:  todo-net (internal bridge)
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# Services: nginx · frontend · backend
+# Database: Amazon RDS (external)
+# Network: todo-net
+# ─────────────────────────────────────────────
 
 services:
 
-  # ── PostgreSQL ─────────────────────────────────────────────
-  postgres:
-    image: postgres:16-alpine
-    container_name: todo-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB:       ${DB_NAME:-tododb}
-      POSTGRES_USER:     ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    networks:
-      - todo-net
-
-  # ── Backend ────────────────────────────────────────────────
+  # ── Backend ─────────────────────────────────
   backend:
     build:
       context: ./todo-backend
@@ -34,22 +16,22 @@ services:
     container_name: todo-backend
     restart: unless-stopped
     environment:
-      PORT:        3001
-      DB_HOST:     postgres
-      DB_PORT:     5432
-      DB_NAME:     ${DB_NAME:-tododb}
-      DB_USER:     ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      JWT_SECRET:  ${JWT_SECRET:-changeme_in_production}
+      PORT: 3001
+
+      # RDS connection
+      DB_HOST: ${DB_HOST}
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: 7d
       CORS_ORIGIN: http://localhost
-    depends_on:
-      postgres:
-        condition: service_healthy
     networks:
       - todo-net
 
-  # ── Frontend ───────────────────────────────────────────────
+  # ── Frontend ────────────────────────────────
   frontend:
     build:
       context: ./todo-frontend
@@ -61,7 +43,7 @@ services:
     networks:
       - todo-net
 
-  # ── Nginx (public entry point) ─────────────────────────────
+  # ── Nginx ───────────────────────────────────
   nginx:
     image: nginx:1.27-alpine
     container_name: todo-nginx
@@ -76,11 +58,7 @@ services:
     networks:
       - todo-net
 
-# ── Volumes ────────────────────────────────────────────────
-volumes:
-  postgres-data:
-
-# ── Networks ───────────────────────────────────────────────
+# ── Network ───────────────────────────────────
 networks:
   todo-net:
     driver: bridge
