@@ -3,3 +3,4 @@
 snap/
 .bash_history
 .docker/
+.env/
