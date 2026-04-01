@@ -1,0 +1,6 @@
+.env
+.env
+.cache/
+snap/
+.bash_history
+.docker/

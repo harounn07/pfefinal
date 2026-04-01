@@ -1,0 +1,29 @@
+# ─────────────────────────────────────────────────────────────
+# Stage 1 — Builder
+# ─────────────────────────────────────────────────────────────
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --frozen-lockfile
+COPY src/ ./src/
+RUN npm prune --production
+
+# ─────────────────────────────────────────────────────────────
+# Stage 2 — Runtime (Alpine)
+# ─────────────────────────────────────────────────────────────
+FROM node:20-alpine AS runtime
+
+# Create a non-root user manually (Alpine has no built-in nonroot)
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
+
+WORKDIR /app
+
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/src          ./src
+COPY --from=builder /app/package.json ./package.json
+
+EXPOSE 3001
+
+CMD ["node", "src/index.js"]
