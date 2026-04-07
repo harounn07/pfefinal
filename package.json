@@ -1,5 +1,11 @@
 {
   "dependencies": {
+    "path-to-regexp": "^8.4.0",
     "pg": "^8.20.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.2.0",
+    "globals": "^17.4.0"
   }
 }
