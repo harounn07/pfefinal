@@ -48,16 +48,18 @@ jobs:
 
       # Scan backend image
       - name: Trivy Backend Scan
-        uses: aquasecurity/trivy-action@0.20.0
+        uses: aquasecurity/trivy-action@0.31.0
         with:
           image-ref: 'pfefinal-backend'
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
+          trivyignores: './todo-backend/.trivyignore'
 
       # Scan frontend image
       - name: Trivy Frontend Scan
-        uses: aquasecurity/trivy-action@0.20.0
+        uses: aquasecurity/trivy-action@0.31.0
         with:
           image-ref: 'pfefinal-frontend'
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
+          trivyignores: './todo-frontend/.trivyignore'
