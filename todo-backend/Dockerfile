@@ -1,39 +1,42 @@
 # ─────────────────────────────────────────────────────────────
-# Stage 1 — Builder
+# Stage 1 — Builder (Debian, safer than Alpine)
 # ─────────────────────────────────────────────────────────────
-FROM node:20-alpine AS builder
+FROM node:20-bookworm-slim AS builder
 
 WORKDIR /app
 
-# Copy manifests first — leverages layer cache
-# If package.json didn't change, npm ci won't re-run
+# Install dependencies (cached layer)
 COPY package*.json ./
+RUN npm ci
 
-# Install ALL dependencies
-RUN npm ci --frozen-lockfile
+# Copy full project (important!)
+COPY . .
 
-# Copy source code
-COPY src/ ./src/
+# Build if needed (uncomment if using TS or build step)
+# RUN npm run build
 
-# Remove devDependencies — production only
-RUN npm prune --production
+# Remove dev dependencies
+RUN npm prune --omit=dev
 
 # ─────────────────────────────────────────────────────────────
-# Stage 2 — Runtime (Distroless)
+# Stage 2 — Runtime (Distroless = minimal + secure)
 # ─────────────────────────────────────────────────────────────
-FROM gcr.io/distroless/nodejs20-debian12 AS runtime
+FROM gcr.io/distroless/nodejs20-debian12
 
-# Run as non-root user
+WORKDIR /app
+
+# Use non-root user (good security practice)
 USER nonroot
 
-WORKDIR /app
-
-# Copy only what we need from builder
+# Copy only required files
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/src          ./src
-COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/src ./src
+
+# If you have build output instead:
+# COPY --from=builder /app/dist ./dist
 
 EXPOSE 3001
 
-# No shell in distroless — must use JSON array form
+# Start app
 CMD ["src/index.js"]
