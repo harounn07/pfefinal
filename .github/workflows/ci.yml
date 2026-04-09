@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - dev
   pull_request:
 
 jobs:
@@ -12,54 +13,53 @@ jobs:
 
     steps:
 
-      # Checkout repository
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Install Node
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      # Install dependencies
       - name: Install dependencies
         run: npm install
 
-      # Lint code
       - name: Run ESLint
         run: npx eslint . || true
 
-      # Run tests
       - name: Run Tests
         run: npm test || echo "No tests"
 
-      # Secret scanning
+      # SONARQUBE ANALYSIS
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v2
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      # SECRET SCAN
       - name: Gitleaks Scan
         uses: gitleaks/gitleaks-action@v2
 
-      # Build backend image
+      # BUILD BACKEND IMAGE
       - name: Build Backend Image
         run: docker build -t pfefinal-backend ./todo-backend
 
-      # Build frontend image
+      # BUILD FRONTEND IMAGE
       - name: Build Frontend Image
         run: docker build -t pfefinal-frontend ./todo-frontend
 
-      # Scan backend image
+      # SECURITY SCAN BACKEND
       - name: Trivy Backend Scan
-        uses: aquasecurity/trivy-action@v0.35.0
+        uses: aquasecurity/trivy-action@0.20.0
         with:
           image-ref: 'pfefinal-backend'
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
-          trivyignores: './todo-backend/.trivyignore'
 
-      # Scan frontend image
+      # SECURITY SCAN FRONTEND
       - name: Trivy Frontend Scan
-        uses: aquasecurity/trivy-action@v0.35.0
+        uses: aquasecurity/trivy-action@0.20.0
         with:
           image-ref: 'pfefinal-frontend'
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
-          trivyignores: './todo-frontend/.trivyignore'
