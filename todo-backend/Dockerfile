@@ -3,7 +3,7 @@
 # ─────────────────────────────────────────────────────────────
 FROM node:20-bookworm-slim AS builder
 
-WORKDIR /ap
+WORKDIR /app
 
 # Install dependencies (cached layer)
 COPY package*.json ./
