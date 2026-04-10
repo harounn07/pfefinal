@@ -4,3 +4,4 @@ snap/
 .bash_history
 .docker/
 .env/
+node_modules/
