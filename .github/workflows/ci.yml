@@ -49,7 +49,7 @@ jobs:
 
       # SECURITY SCAN BACKEND
       - name: Trivy Backend Scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.19.0
         with:
           image-ref: 'pfefinal-backend'
           severity: 'CRITICAL,HIGH'
@@ -58,7 +58,7 @@ jobs:
 
       # SECURITY SCAN FRONTEND
       - name: Trivy Frontend Scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.19.0
         with:
           image-ref: 'pfefinal-frontend'
           severity: 'CRITICAL,HIGH'
