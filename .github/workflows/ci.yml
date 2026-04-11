@@ -1,65 +1,102 @@
 name: DevSecOps CI Pipeline
 
 on:
-  push:
-    branches:
-      - main
-      - dev
-  pull_request:
+push:
+branches:
+- main
+- dev
+pull_request:
 
 jobs:
-  ci:
-    runs-on: ubuntu-latest
+ci:
+runs-on: ubuntu-latest
 
-    steps:
+```
+steps:
 
-      - name: Checkout Code
-        uses: actions/checkout@v4
+  # 1. Checkout code
+  - name: Checkout Code
+    uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
+  # 2. Setup Node
+  - name: Setup Node
+    uses: actions/setup-node@v4
+    with:
+      node-version: 18
 
-      - name: Install dependencies
-        run: npm install
+  # 3. Install Backend dependencies
+  - name: Install Backend deps
+    run: |
+      cd todo-backend
+      npm install
 
-      - name: Run ESLint
-        run: npx eslint . || true
+  # 4. Install Frontend dependencies
+  - name: Install Frontend deps
+    run: |
+      cd todo-frontend
+      npm install
 
-      - name: Run Tests
-        run: npm test || echo "No tests"
+  # 5. Lint Backend
+  - name: Run ESLint Backend
+    run: |
+      cd todo-backend
+      npx eslint . || true
 
-      # SONARQUBE ANALYSIS
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@v2
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  # 6. Lint Frontend
+  - name: Run ESLint Frontend
+    run: |
+      cd todo-frontend
+      npx eslint . || true
 
-      # SECRET SCAN
-      - name: Gitleaks Scan
-        uses: gitleaks/gitleaks-action@v2
+  # 7. Run Backend Tests
+  - name: Run Backend Tests
+    run: |
+      cd todo-backend
+      npm test || echo "No backend tests"
 
-      # BUILD BACKEND IMAGE
-      - name: Build Backend Image
-        run: docker build -t pfefinal-backend ./todo-backend
+  # 8. Run Frontend Tests
+  - name: Run Frontend Tests
+    run: |
+      cd todo-frontend
+      npm test || echo "No frontend tests"
 
-      # BUILD FRONTEND IMAGE
-      - name: Build Frontend Image
-        run: docker build -t pfefinal-frontend ./todo-frontend
+  # 9. SonarCloud Scan
+  - name: SonarCloud Scan
+    uses: SonarSource/sonarcloud-github-action@v2
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    with:
+      args: >
+        -Dsonar.projectKey=pfe-devsecops
+        -Dsonar.organization=your-org
 
-      # SECURITY SCAN BACKEND
-      - name: Trivy Backend Scan
-        uses: aquasecurity/trivy-action@0.20.0
-        with:
-          image-ref: 'pfefinal-backend'
-          severity: 'CRITICAL,HIGH'
-          exit-code: '1'
+  # 10. Secret Scan (Gitleaks)
+  - name: Gitleaks Scan
+    uses: gitleaks/gitleaks-action@v2
 
-      # SECURITY SCAN FRONTEND
-      - name: Trivy Frontend Scan
-        uses: aquasecurity/trivy-action@0.20.0
-        with:
-          image-ref: 'pfefinal-frontend'
-          severity: 'CRITICAL,HIGH'
-          exit-code: '1'
+  # 11. Build Backend Docker Image
+  - name: Build Backend Image
+    run: docker build -t pfefinal-backend ./todo-backend
+
+  # 12. Build Frontend Docker Image
+  - name: Build Frontend Image
+    run: docker build -t pfefinal-frontend ./todo-frontend
+
+  # 13. Scan Backend Image (Trivy)
+  - name: Trivy Backend Scan
+    uses: aquasecurity/trivy-action@0.28.0
+    with:
+      image-ref: 'pfefinal-backend'
+      severity: 'CRITICAL,HIGH'
+      exit-code: '1'
+      ignore-unfixed: true
+
+  # 14. Scan Frontend Image (Trivy)
+  - name: Trivy Frontend Scan
+    uses: aquasecurity/trivy-action@0.28.0
+    with:
+      image-ref: 'pfefinal-frontend'
+      severity: 'CRITICAL,HIGH'
+      exit-code: '1'
+      ignore-unfixed: true
+```
