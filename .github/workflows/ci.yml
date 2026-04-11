@@ -11,7 +11,7 @@ jobs:
 ci:
 runs-on: ubuntu-latest
 
-```
+
 steps:
 
   # 1. Checkout code
@@ -99,4 +99,4 @@ steps:
       severity: 'CRITICAL,HIGH'
       exit-code: '1'
       ignore-unfixed: true
-```
+
