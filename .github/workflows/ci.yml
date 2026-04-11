@@ -1,58 +1,64 @@
 name: DevSecOps CI Pipeline
 
 on:
-  push:
-    branches:
-      - main
-      - dev
-  pull_request:
+push:
+branches:
+- main
+- dev
+pull_request:
 
 jobs:
-  ci:
-    runs-on: ubuntu-latest
+ci:
+runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+steps:
+  - name: Checkout Code
+    uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
+  - name: Setup Node
+    uses: actions/setup-node@v4
+    with:
+      node-version: 18
 
-      - name: Install dependencies
-        run: npm install
+  - name: Install dependencies
+    run: npm install
 
-      - name: Run ESLint
-        run: npx eslint . || true
+  - name: Run ESLint
+    run: npx eslint . || true
 
-      - name: Run Tests
-        run: npm test || echo "No tests"
+  - name: Run Tests
+    run: npm test || echo "No tests"
 
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@v2
-        env:
-          SONAR_TOKEN: \${{ secrets.SONAR_TOKEN }}
+  # SONARQUBE ANALYSIS
+  - name: SonarCloud Scan
+    uses: SonarSource/sonarcloud-github-action@v2
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-      - name: Gitleaks Scan
-        uses: gitleaks/gitleaks-action@v2
+  # SECRET SCAN
+  - name: Gitleaks Scan
+    uses: gitleaks/gitleaks-action@v2
 
-      - name: Build Backend Image
-        run: docker build -t pfefinal-backend ./todo-backend
+  # BUILD BACKEND IMAGE
+  - name: Build Backend Image
+    run: docker build -t pfefinal-backend ./todo-backend
 
-      - name: Build Frontend Image
-        run: docker build -t pfefinal-frontend ./todo-frontend
+  # BUILD FRONTEND IMAGE
+  - name: Build Frontend Image
+    run: docker build -t pfefinal-frontend ./todo-frontend
 
-      - name: Trivy Backend Scan
-        uses: aquasecurity/trivy-action@0.20.0
-        with:
-          image-ref: 'pfefinal-backend'
-          severity: 'CRITICAL,HIGH'
-          exit-code: '1'
+  # SECURITY SCAN BACKEND
+  - name: Trivy Backend Scan
+    uses: aquasecurity/trivy-action@0.28.0
+    with:
+      image-ref: 'pfefinal-backend'
+      severity: 'CRITICAL,HIGH'
+      exit-code: '1'
 
-      - name: Trivy Frontend Scan
-        uses: aquasecurity/trivy-action@0.20.0
-        with:
-          image-ref: 'pfefinal-frontend'
-          severity: 'CRITICAL,HIGH'
-          exit-code: '1'
+  # SECURITY SCAN FRONTEND
+  - name: Trivy Frontend Scan
+    uses: aquasecurity/trivy-action@0.28.0
+    with:
+      image-ref: 'pfefinal-frontend'
+      severity: 'CRITICAL,HIGH'
+      exit-code: '1'
