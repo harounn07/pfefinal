@@ -4,37 +4,59 @@ import { useAuth } from '../context/AuthContext';
 import './LoginPage.css';
 
 export default function LoginPage() {
-  const [email,    setEmail]    = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error,    setError]    = useState(null);
-  const [loading,  setLoading]  = useState(false);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const { login }  = useAuth();
-  const navigate   = useNavigate();
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+
+    // ── basic validation ─────────────────────
+    if (!email.trim() || !password.trim()) {
+      setError('Email and password are required');
+      return;
+    }
+
     setLoading(true);
 
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+        }),
       });
 
-      const data = await res.json();
+      let data = null;
+
+      try {
+        data = await res.json();
+      } catch {
+        data = null;
+      }
 
       if (!res.ok) {
-        setError(data.error || 'Login failed');
+        setError(data?.error || 'Login failed');
+        return;
+      }
+
+      if (!data?.token || !data?.user) {
+        setError('Invalid server response');
         return;
       }
 
       login(data.token, data.user);
       navigate('/');
 
-    } catch (e) {
+    } catch (err) {
+      console.error('[LOGIN]', err.message);
       setError('Could not reach the server.');
     } finally {
       setLoading(false);
@@ -85,8 +107,7 @@ export default function LoginPage() {
         </form>
 
         <p className="auth-switch">
-          No account?{' '}
-          <Link to="/register">Create one</Link>
+          No account? <Link to="/register">Create one</Link>
         </p>
 
       </div>

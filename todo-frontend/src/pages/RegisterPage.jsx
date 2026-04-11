@@ -4,18 +4,24 @@ import { useAuth } from '../context/AuthContext';
 import './LoginPage.css';
 
 export default function RegisterPage() {
-  const [email,    setEmail]    = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirm,  setConfirm]  = useState('');
-  const [error,    setError]    = useState(null);
-  const [loading,  setLoading]  = useState(false);
+  const [confirm, setConfirm] = useState('');
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const { login }  = useAuth();
-  const navigate   = useNavigate();
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+
+    // ── validation ───────────────────────────
+    if (!email.trim() || !password.trim() || !confirm.trim()) {
+      setError('All fields are required');
+      return;
+    }
 
     if (password !== confirm) {
       setError('Passwords do not match');
@@ -33,20 +39,35 @@ export default function RegisterPage() {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+        }),
       });
 
-      const data = await res.json();
+      let data = null;
+
+      try {
+        data = await res.json();
+      } catch {
+        data = null;
+      }
 
       if (!res.ok) {
-        setError(data.error || 'Registration failed');
+        setError(data?.error || 'Registration failed');
+        return;
+      }
+
+      if (!data?.token || !data?.user) {
+        setError('Invalid server response');
         return;
       }
 
       login(data.token, data.user);
       navigate('/');
 
-    } catch (e) {
+    } catch (err) {
+      console.error('[REGISTER]', err.message);
       setError('Could not reach the server.');
     } finally {
       setLoading(false);
