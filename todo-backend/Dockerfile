@@ -1,42 +1,41 @@
-# ─────────────────────────────────────────────────────────────
-# Stage 1 — Builder (Debian, safer than Alpine)
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# Stage 1 — Builder
+# ─────────────────────────────────────────────
 FROM node:20-bookworm-slim AS builder
 
 WORKDIR /app
 
-# Install dependencies (cached layer)
+# Set production env early
+ENV NODE_ENV=production
+
+# Install dependencies (better caching)
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --omit=dev
 
-# Copy full project (important!)
-COPY . .
+# Copy source code
+COPY src ./src
 
-# Build if needed (uncomment if using TS or build step)
+# If you have build step (TS for example)
 # RUN npm run build
 
-# Remove dev dependencies
-RUN npm prune --omit=dev
-
-# ─────────────────────────────────────────────────────────────
-# Stage 2 — Runtime (Distroless = minimal + secure)
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# Stage 2 — Runtime (Distroless)
+# ─────────────────────────────────────────────
 FROM gcr.io/distroless/nodejs20-debian12
 
 WORKDIR /app
 
-# Use non-root user (good security practice)
+ENV NODE_ENV=production
+
+# Run as non-root (security best practice)
 USER nonroot
 
-# Copy only required files
+# Copy only needed files
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/src ./src
 
-# If you have build output instead:
-# COPY --from=builder /app/dist ./dist
-
 EXPOSE 3001
 
-# Start app
-CMD ["src/index.js"]
+# Explicit node execution (clearer for Sonar)
+CMD ["node", "src/index.js"]

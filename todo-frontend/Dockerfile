@@ -1,51 +1,46 @@
-# ─────────────────────────────────────────────────────────────
-# Stage 1 — Install dependencies
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# Stage 1 — Dependencies
+# ─────────────────────────────────────────────
 FROM node:22-alpine3.21 AS deps
 
 WORKDIR /app
 
-# Install security updates first
-RUN apk update && apk upgrade --no-cache
+ENV NODE_ENV=production
 
+# Install dependencies (no upgrade for reproducibility)
 COPY package*.json ./
-RUN npm ci --frozen-lockfile
+RUN npm ci
 
-# ─────────────────────────────────────────────────────────────
-# Stage 2 — Build the React app
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# Stage 2 — Build
+# ─────────────────────────────────────────────
 FROM node:22-alpine3.21 AS builder
 
 WORKDIR /app
 
-# Upgrade OS packages
-RUN apk update && apk upgrade --no-cache
+ENV NODE_ENV=production
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 RUN npm run build
 
-# ─────────────────────────────────────────────────────────────
-# Stage 3 — Runtime (Nginx serves static files)
-# ─────────────────────────────────────────────────────────────
-FROM nginx:1.27-alpine3.21 AS runtime
+# ─────────────────────────────────────────────
+# Stage 3 — Runtime (Nginx)
+# ─────────────────────────────────────────────
+FROM nginx:1.27-alpine3.21
 
-# 🔥 Upgrade ALL system packages (fix vulnerabilities)
-RUN apk update && apk upgrade --no-cache && \
-    apk add --no-cache \
-    openssl \
-    libxml2 \
-    libpng
-
-# Remove default nginx config
+# Remove default config
 RUN rm /etc/nginx/conf.d/default.conf
 
-# Copy custom nginx config
-COPY nginx-frontend.conf /etc/nginx/conf.d/app.conf
+# Copy custom config
+COPY nginx-frontend.conf /etc/nginx/conf.d/default.conf
 
-# Copy built React app
+# Copy build output
 COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Use non-root nginx user
+USER nginx
 
 EXPOSE 80
 
