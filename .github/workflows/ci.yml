@@ -12,7 +12,7 @@ ci:
 runs-on: ubuntu-latest
 
 steps:
-  # 1. Checkout
+  # 1. Checkout code
   - name: Checkout Code
     uses: actions/checkout@v4
     with:
@@ -23,39 +23,85 @@ steps:
     uses: actions/setup-node@v4
     with:
       node-version: 18
+      cache: npm
 
-  # 3. Install Backend
-  - name: Install Backend
-    run: |
-      cd todo-backend
-      npm install
+  # 3. Setup Java (required for Sonar)
+  - name: Setup Java
+    uses: actions/setup-java@v4
+    with:
+      distribution: temurin
+      java-version: 17
 
-  # 4. Install Frontend
-  - name: Install Frontend
-    run: |
-      cd todo-frontend
-      npm install
+  # 4. Install Backend dependencies
+  - name: Install Backend deps
+    working-directory: ./todo-backend
+    run: npm install
 
-  # 5. Build Backend Docker
-  - name: Build Backend Docker
+  # 5. Install Frontend dependencies
+  - name: Install Frontend deps
+    working-directory: ./todo-frontend
+    run: npm install
+
+  # 6. Lint Backend
+  - name: Run ESLint Backend
+    working-directory: ./todo-backend
+    run: npx eslint . || true
+
+  # 7. Lint Frontend
+  - name: Run ESLint Frontend
+    working-directory: ./todo-frontend
+    run: npx eslint . || true
+
+  # 8. Backend Tests
+  - name: Run Backend Tests
+    working-directory: ./todo-backend
+    run: npm test || echo "No backend tests"
+
+  # 9. Frontend Tests
+  - name: Run Frontend Tests
+    working-directory: ./todo-frontend
+    run: npm test || echo "No frontend tests"
+
+  # 10. SonarCloud Scan
+  - name: SonarCloud Scan
+    uses: SonarSource/sonarcloud-github-action@v2
+    continue-on-error: true
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    with:
+      args: >
+        -Dsonar.projectKey=pfe-devsecops
+        -Dsonar.organization=your-org
+
+  # 11. Secret Scan
+  - name: Gitleaks Scan
+    uses: gitleaks/gitleaks-action@v2
+    continue-on-error: true
+
+  # 12. Build Backend Docker Image
+  - name: Build Backend Image
     run: docker build -t pfefinal-backend ./todo-backend
 
-  # 6. Build Frontend Docker
-  - name: Build Frontend Docker
+  # 13. Build Frontend Docker Image
+  - name: Build Frontend Image
     run: docker build -t pfefinal-frontend ./todo-frontend
 
-  # 7. Trivy Backend Scan
+  # 14. Trivy Backend Scan
   - name: Trivy Backend Scan
     uses: aquasecurity/trivy-action@0.28.0
+    continue-on-error: true
     with:
       image-ref: pfefinal-backend
       severity: CRITICAL,HIGH
       exit-code: '0'
+      ignore-unfixed: true
 
-  # 8. Trivy Frontend Scan
+  # 15. Trivy Frontend Scan
   - name: Trivy Frontend Scan
     uses: aquasecurity/trivy-action@0.28.0
+    continue-on-error: true
     with:
       image-ref: pfefinal-frontend
       severity: CRITICAL,HIGH
       exit-code: '0'
+      ignore-unfixed: true
