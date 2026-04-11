@@ -96,7 +96,6 @@ steps:
       exit-code: '0'
       ignore-unfixed: true
 
-  # 15. Trivy Frontend Scan
   - name: Trivy Frontend Scan
     uses: aquasecurity/trivy-action@0.28.0
     continue-on-error: true
