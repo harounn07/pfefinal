@@ -1,11 +1,11 @@
 name: DevSecOps CI Pipeline
 
 on:
-push:
-branches:
-- main
-- dev
-pull_request:
+  push:
+    branches:
+    - main
+    - dev
+  pull_request:
 
 jobs:
 ci:
