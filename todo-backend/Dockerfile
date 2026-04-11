@@ -21,7 +21,7 @@ COPY src ./src
 # ─────────────────────────────────────────────
 # Stage 2 — Runtime (Distroless)
 # ─────────────────────────────────────────────
-FROM gcr.io/distroless/nodejs20-debian12
+FROM gcr.io/distroless/nodejs20-debian12:nonroot
 
 WORKDIR /app
 

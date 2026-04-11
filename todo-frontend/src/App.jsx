@@ -35,7 +35,6 @@ function TodoApp() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // ── Auth fetch ───────────────────────────────
   const authFetch = useCallback(
     async (url, options = {}) => {
       const res = await fetch(url, {
@@ -56,7 +55,6 @@ function TodoApp() {
     [token]
   );
 
-  // ── Fetch todos ──────────────────────────────
   const fetchTodos = useCallback(async () => {
     try {
       const res = await authFetch(API);
@@ -81,7 +79,6 @@ function TodoApp() {
     fetchTodos();
   }, [fetchTodos]);
 
-  // ── Add todo ─────────────────────────────────
   const addTodo = async (title) => {
     const optimistic = {
       id: `tmp-${Date.now()}`,
@@ -108,7 +105,6 @@ function TodoApp() {
     }
   };
 
-  // ── Toggle ───────────────────────────────────
   const toggleTodo = async (id, completed) => {
     setTodos((prev) =>
       prev.map((t) => (t.id === id ? { ...t, completed } : t))
@@ -129,7 +125,6 @@ function TodoApp() {
     }
   };
 
-  // ── Delete ───────────────────────────────────
   const deleteTodo = async (id) => {
     const snapshot = todos;
     setTodos((prev) => prev.filter((t) => t.id !== id));
@@ -142,13 +137,11 @@ function TodoApp() {
     }
   };
 
-  // ── Clear completed (FIX sonar) ──────────────
   const clearCompleted = async () => {
     const completed = todos.filter((t) => t.completed);
     await Promise.all(completed.map((t) => deleteTodo(t.id)));
   };
 
-  // ── Filters ──────────────────────────────────
   const filtered = todos.filter((t) => {
     if (filter === 'active') return !t.completed;
     if (filter === 'done') return t.completed;
