@@ -1,37 +1,61 @@
-name: Debug CI
+name: DevSecOps CI Pipeline
 
 on:
 push:
+branches:
+- main
+- dev
+pull_request:
 
 jobs:
-debug:
+ci:
 runs-on: ubuntu-latest
 
 steps:
-  - name: Checkout
+  # 1. Checkout
+  - name: Checkout Code
     uses: actions/checkout@v4
+    with:
+      fetch-depth: 0
 
-  - name: Show structure
-    run: |
-      echo "ROOT:"
-      ls -la
-      echo "BACKEND:"
-      ls -la todo-backend || echo "missing backend"
-      echo "FRONTEND:"
-      ls -la todo-frontend || echo "missing frontend"
+  # 2. Setup Node
+  - name: Setup Node
+    uses: actions/setup-node@v4
+    with:
+      node-version: 18
 
-  - name: Test backend install
+  # 3. Install Backend
+  - name: Install Backend
     run: |
-      cd todo-backend || exit 1
+      cd todo-backend
       npm install
 
-  - name: Test frontend install
+  # 4. Install Frontend
+  - name: Install Frontend
     run: |
-      cd todo-frontend || exit 1
+      cd todo-frontend
       npm install
 
-  - name: Test backend docker build
-    run: docker build -t test-backend ./todo-backend
+  # 5. Build Backend Docker
+  - name: Build Backend Docker
+    run: docker build -t pfefinal-backend ./todo-backend
 
-  - name: Test frontend docker build
-    run: docker build -t test-frontend ./todo-frontend
+  # 6. Build Frontend Docker
+  - name: Build Frontend Docker
+    run: docker build -t pfefinal-frontend ./todo-frontend
+
+  # 7. Trivy Backend Scan
+  - name: Trivy Backend Scan
+    uses: aquasecurity/trivy-action@0.28.0
+    with:
+      image-ref: pfefinal-backend
+      severity: CRITICAL,HIGH
+      exit-code: '0'
+
+  # 8. Trivy Frontend Scan
+  - name: Trivy Frontend Scan
+    uses: aquasecurity/trivy-action@0.28.0
+    with:
+      image-ref: pfefinal-frontend
+      severity: CRITICAL,HIGH
+      exit-code: '0'
