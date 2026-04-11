@@ -25,7 +25,7 @@ ProtectedRoute.propTypes = {
   children: PropTypes.node.isRequired,
 };
 
-// ── Todo App ────────────────────────────────────
+// ──  App ────────────────────────────────────
 function TodoApp() {
   const { token, user, logout } = useAuth();
   const navigate = useNavigate();
