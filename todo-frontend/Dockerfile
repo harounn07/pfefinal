@@ -28,7 +28,7 @@ RUN npm run build
 # ─────────────────────────────────────────────
 # Stage 3 — Runtime (Nginx)
 # ─────────────────────────────────────────────
-FROM nginx:1.27-alpine3.21
+FROM nginx:stable
 
 # Remove default config
 RUN rm /etc/nginx/conf.d/default.conf
