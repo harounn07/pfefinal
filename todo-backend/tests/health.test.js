@@ -1,23 +1,21 @@
 process.env.NODE_ENV = 'test';
 
+jest.mock('../src/db', () => ({
+  query: jest.fn(),
+  on: jest.fn(),
+}));
+
 const request = require('supertest');
 const app = require('../src/index');
 
-describe('API tests', () => {
+describe('Health endpoint', () => {
 
-  it('GET /health works', async () => {
+  it('GET /health returns status ok', async () => {
     const res = await request(app).get('/health');
 
     expect(res.statusCode).toBe(200);
     expect(res.body.status).toBe('ok');
-  });
-
-  it('POST /api/auth/register fails with empty body', async () => {
-    const res = await request(app)
-      .post('/api/auth/register')
-      .send({});
-
-    expect(res.statusCode).toBeGreaterThanOrEqual(400);
+    expect(res.body.timestamp).toBeDefined();
   });
 
 });
