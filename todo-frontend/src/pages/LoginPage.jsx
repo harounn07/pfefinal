@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import './LoginPage.css';
+import AuthForm from '../components/AuthForm';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -16,7 +16,6 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
 
-    // ── basic validation ─────────────────────
     if (!email.trim() || !password.trim()) {
       setError('Email and password are required');
       return;
@@ -28,89 +27,41 @@ export default function LoginPage() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: email.trim(),
-          password,
-        }),
+        body: JSON.stringify({ email: email.trim(), password }),
       });
 
-      let data = null;
-
-      try {
-        data = await res.json();
-      } catch {
-        data = null;
-      }
+      const data = await res.json();
 
       if (!res.ok) {
         setError(data?.error || 'Login failed');
         return;
       }
 
-      if (!data?.token || !data?.user) {
-        setError('Invalid server response');
-        return;
-      }
-
       login(data.token, data.user);
       navigate('/');
 
-    } catch (err) {
-      console.error('[LOGIN]', err.message);
-      setError('Could not reach the server.');
+    } catch {
+      setError('Server error');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-
-        <div className="auth-header">
-          <span className="brand-mark">◆</span>
-          <h1 className="auth-title">Welcome back</h1>
-          <p className="auth-sub">Sign in to your account</p>
-        </div>
-
-        {error && <div className="auth-error">{error}</div>}
-
-        <form className="auth-form" onSubmit={handleSubmit}>
-          <div className="field">
-            <label htmlFor="email">Email</label>
-            <input
-              id="email"
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoFocus
-            />
-          </div>
-
-          <div className="field">
-            <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-
-          <button className="auth-btn" type="submit" disabled={loading}>
-            {loading ? <span className="loader" /> : 'Sign in'}
-          </button>
-        </form>
-
-        <p className="auth-switch">
-          No account? <Link to="/register">Create one</Link>
-        </p>
-
-      </div>
-    </div>
+    <AuthForm
+      title="Welcome back"
+      subtitle="Sign in to your account"
+      email={email}
+      password={password}
+      setEmail={setEmail}
+      setPassword={setPassword}
+      onSubmit={handleSubmit}
+      loading={loading}
+      error={error}
+      buttonText="Sign in"
+      footerText="No account?"
+      footerLink="/register"
+      footerLinkText="Create one"
+    />
   );
 }
