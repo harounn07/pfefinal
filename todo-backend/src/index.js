@@ -1,12 +1,12 @@
 require('dotenv').config();
-const express    = require('express');
-const cors       = require('cors');
-const pool       = require('./db');
-const authRouter  = require('./routes/auth');
+const express = require('express');
+const cors = require('cors');
+const pool = require('./db');
+const authRouter = require('./routes/auth');
 const todosRouter = require('./routes/todos');
 const authMiddleware = require('./middleware/auth');
 
-const app  = express();
+const app = express();
 const PORT = process.env.PORT || 3001;
 
 // ── Global middleware ──────────────────────────────────────
@@ -16,28 +16,35 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// ── Public routes (no token needed) ───────────────────────
+// ── Public routes ──────────────────────────────────────────
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+  });
 });
 
 app.use('/api/auth', authRouter);
 
-// ── Protected routes (token required) ─────────────────────
+// ── Protected routes ───────────────────────────────────────
 app.use('/api/todos', authMiddleware, todosRouter);
 
 // ── 404 handler ────────────────────────────────────────────
 app.use((req, res) => {
-  res.status(404).json({ error: `Route ${req.method} ${req.path} not found` });
+  res.status(404).json({
+    error: `Route ${req.method} ${req.path} not found`,
+  });
 });
 
 // ── Global error handler ───────────────────────────────────
 app.use((err, req, res, next) => {
   console.error('[Unhandled error]', err);
-  res.status(500).json({ error: 'Internal server error' });
+  res.status(500).json({
+    error: 'Internal server error',
+  });
 });
 
-// ── Create tables then start server ───────────────────────
+// ── DB Init ────────────────────────────────────────────────
 async function initDB() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
@@ -61,13 +68,22 @@ async function initDB() {
   console.log('[DB] Schema ready');
 }
 
-initDB()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`[Server] Listening on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
+// ── Start Server (ONLY outside tests) ──────────────────────
+async function startServer() {
+  await initDB();
+
+  app.listen(PORT, () => {
+    console.log(`[Server] Listening on port ${PORT}`);
+  });
+}
+
+// 🚀 Prevent auto-start during tests
+if (process.env.NODE_ENV !== 'test') {
+  startServer().catch((err) => {
     console.error('[DB] Init failed:', err.message);
     process.exit(1);
   });
+}
+
+// ✅ Export app for testing
+module.exports = app;
