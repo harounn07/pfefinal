@@ -7,7 +7,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Install dependencies (no upgrade for reproducibility)
+# Install dependencies (no upgrade for reproducibiliity)
 COPY package*.json ./
 RUN npm ci
 
