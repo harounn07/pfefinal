@@ -12,7 +12,7 @@ COPY package*.json ./
 RUN npm ci --include=dev
 
 # ─────────────────────────────────────────────
-# Stage 2 — Build
+# Stage 2 — Buildd
 # ─────────────────────────────────────────────
 FROM node:22-alpine3.21 AS builder
 
