@@ -9,7 +9,7 @@ ENV NODE_ENV=production
 
 # Install dependencies (no upgrade for reproducibiliity)
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --include=dev
 
 # ─────────────────────────────────────────────
 # Stage 2 — Build
