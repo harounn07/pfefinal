@@ -28,7 +28,9 @@ RUN npm run build
 # ─────────────────────────────────────────────
 # Stage 3 — Runtime (Nginx)
 # ─────────────────────────────────────────────
-FROM nginx:stable
+FROM nginx:1.27-alpine
+
+RUN apk update && apk upgrade
 
 # Remove default config
 RUN rm /etc/nginx/conf.d/default.conf
