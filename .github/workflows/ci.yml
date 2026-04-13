@@ -12,50 +12,47 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # ── CHECKOUT (FIX SHALLOW CLONE) ─────────────
+      # ── CHECKOUT ───────────────────────────────
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # 🔥 مهم ل SonarCloud
+          fetch-depth: 0
 
-      # ── NODE SETUP ──────────────────────────────
+      # ── NODE SETUP ────────────────────────────
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      # ── INSTALL ─────────────────────────────────
-      - name: Install dependencies
+      # ── BACKEND INSTALL ───────────────────────
+      - name: Install Backend dependencies
+        working-directory: ./todo-backend
         run: npm install
 
-      # ── LINT ────────────────────────────────────
-      - name: Run ESLint
-        run: npx eslint . || true
+      # ── BACKEND TESTS (GENERATES COVERAGE) ────
+      - name: Run Backend Tests
+        working-directory: ./todo-backend
+        run: npm test
 
-      # ── TESTS ───────────────────────────────────
-      - name: Run Tests
-        run: npm test --if-present
-
-      # ── SONARCLOUD ──────────────────────────────
+      # ── SONARCLOUD ANALYSIS ───────────────────
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v2
-        continue-on-error: true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-      # ── SECRET SCAN ─────────────────────────────
+      # ── SECRET SCAN ───────────────────────────
       - name: Gitleaks Scan
         uses: gitleaks/gitleaks-action@v2
 
-      # ── BUILD BACKEND ───────────────────────────
+      # ── BUILD BACKEND IMAGE ───────────────────
       - name: Build Backend Image
         run: docker build -t pfefinal-backend ./todo-backend
 
-      # ── BUILD FRONTEND ──────────────────────────
+      # ── BUILD FRONTEND IMAGE ──────────────────
       - name: Build Frontend Image
         run: docker build -t pfefinal-frontend ./todo-frontend
 
-      # ── TRIVY BACKEND ───────────────────────────
+      # ── TRIVY BACKEND SCAN ────────────────────
       - name: Trivy Backend Scan
         uses: aquasecurity/trivy-action@v0.19.0
         with:
@@ -64,7 +61,7 @@ jobs:
           exit-code: '1'
           ignorefile: .trivyignore
 
-      # ── TRIVY FRONTEND ──────────────────────────
+      # ── TRIVY FRONTEND SCAN ───────────────────
       - name: Trivy Frontend Scan
         uses: aquasecurity/trivy-action@v0.19.0
         with:
