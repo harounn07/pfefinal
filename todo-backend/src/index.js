@@ -11,20 +11,31 @@ const authMiddleware = require('./middleware/auth');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// ── GLOBAL MIDDLEWARE ─────────────────────────────
+const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173';
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin: corsOrigin === '*' ? true : corsOrigin,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
 }));
 
 app.use(express.json());
 
 // ── PUBLIC ROUTES ─────────────────────────────────
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-  });
+app.get('/health', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error('[HEALTH] DB check failed:', err.message);
+    res.status(503).json({
+      status: 'error',
+      error: 'Database unreachable',
+      timestamp: new Date().toISOString(),
+    });
+  }
 });
 
 app.use('/api/auth', authRouter);
@@ -73,16 +84,28 @@ async function initDB() {
 
 // ── START SERVER ONLY IF NOT TEST ─────────────────
 if (process.env.NODE_ENV !== 'test') {
-  initDB()
-    .then(() => {
-      app.listen(PORT, () => {
-        console.log(`[Server] Listening on port ${PORT}`);
-      });
-    })
-    .catch((err) => {
-      console.error('[DB] Init failed:', err.message);
-      process.exit(1);
-    });
+  // Start the server first so health checks work
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`[Server] Listening on port ${PORT}`);
+  });
+
+  // Then try to init DB (with retries)
+  (async function retryInitDB(attempts = 5, delay = 3000) {
+    for (let i = 1; i <= attempts; i++) {
+      try {
+        await initDB();
+        return;
+      } catch (err) {
+        console.error(`[DB] Init attempt ${i}/${attempts} failed:`, err.message);
+        if (i < attempts) {
+          console.log(`[DB] Retrying in ${delay / 1000}s...`);
+          await new Promise((r) => setTimeout(r, delay));
+        } else {
+          console.error('[DB] All init attempts failed. Server running but DB unavailable.');
+        }
+      }
+    }
+  })();
 }
 
 // ── EXPORT FOR TESTING ────────────────────────────
