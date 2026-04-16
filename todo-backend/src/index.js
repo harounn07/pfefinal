@@ -50,7 +50,7 @@ app.use((req, res) => {
   });
 });
 
-// ── GLOBAL ERROR HANDLER ──────────────────────────
+/* istanbul ignore next -- global error handler, safety net */
 app.use((err, req, res, next) => {
   console.error('[Unhandled error]', err);
   res.status(500).json({
@@ -58,7 +58,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// ── INIT DATABASE ─────────────────────────────────
+/* istanbul ignore next -- DB init only runs at startup */
 async function initDB() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
@@ -82,7 +82,7 @@ async function initDB() {
   console.log('[DB] Schema ready');
 }
 
-// ── START SERVER ONLY IF NOT TEST ─────────────────
+/* istanbul ignore next -- server startup, not testable in unit tests */
 if (process.env.NODE_ENV !== 'test') {
   // Start the server first so health checks work
   app.listen(PORT, '0.0.0.0', () => {

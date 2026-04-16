@@ -6,11 +6,18 @@ jest.mock('../src/db', () => ({
 }));
 
 const request = require('supertest');
+const db = require('../src/db');
 const app = require('../src/index');
 
 describe('Health endpoint', () => {
 
-  it('GET /health returns status ok', async () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('GET /health returns status ok when DB responds', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ '?column?': 1 }] });
+
     const res = await request(app).get('/health');
 
     expect(res.statusCode).toBe(200);
@@ -18,4 +25,15 @@ describe('Health endpoint', () => {
     expect(res.body.timestamp).toBeDefined();
   });
 
+  it('GET /health returns 503 when DB fails', async () => {
+    db.query.mockRejectedValueOnce(new Error('DB down'));
+
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const res = await request(app).get('/health');
+    spy.mockRestore();
+
+    expect(res.statusCode).toBe(503);
+    expect(res.body.status).toBe('error');
+    expect(res.body.error).toBe('Database unreachable');
+  });
 });
