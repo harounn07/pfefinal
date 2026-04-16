@@ -20,3 +20,31 @@ CVE-2022-27943
 
 # openssl - PowerPC only, not relevant
 CVE-2025-27587
+
+# systemd (libsystemd0, libudev1) - no fix in Debian 12
+CVE-2026-29111
+
+# ncurses (libtinfo6, ncurses-base, ncurses-bin) - no fix in Debian 12
+CVE-2025-69720
+
+# zlib - will_not_fix by Debian (minizip feature, not used)
+CVE-2023-45853
+
+# npm transitive deps (cross-spawn) - in node image, not app code
+CVE-2024-21538
+
+# npm transitive deps (glob) - in node image, not app code
+CVE-2025-64756
+
+# npm transitive deps (minimatch) - in node image, not app code
+CVE-2026-26996
+CVE-2026-27903
+CVE-2026-27904
+
+# npm transitive deps (tar) - in node image, not app code
+CVE-2026-23745
+CVE-2026-23950
+CVE-2026-24842
+CVE-2026-26960
+CVE-2026-29786
+CVE-2026-31802

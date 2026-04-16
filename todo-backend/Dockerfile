@@ -1,7 +1,7 @@
 # ─────────────────────────────────────────────
 # Stage 1 — Builder
 # ─────────────────────────────────────────────
-FROM node:20-bookworm-slim AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -9,9 +9,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 # Install build tools for bcrypt native module
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends python3 make g++ && \
-    rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache python3 make g++
 
 # Install dependencies (better caching)
 COPY package*.json ./
@@ -21,13 +19,17 @@ RUN npm ci --omit=dev
 COPY src ./src
 
 # ─────────────────────────────────────────────
-# Stage 2 — Runtime (slim Node, not distroless)
+# Stage 2 — Runtime (Alpine, minimal attack surface)
 # ─────────────────────────────────────────────
-FROM node:20-bookworm-slim
+FROM node:20-alpine
 
 WORKDIR /app
 
 ENV NODE_ENV=production
+
+# Run as non-root
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
 
 # Copy only needed files
 COPY --from=builder /app/node_modules ./node_modules
