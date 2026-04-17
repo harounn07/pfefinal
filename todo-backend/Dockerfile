@@ -5,21 +5,20 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Set production env early
 ENV NODE_ENV=production
 
-# Install build tools for bcrypt native module
+# Install build tools (bcrypt etc.)
 RUN apk add --no-cache python3 make g++
 
-# Install dependencies (better caching)
+# Install dependencies
 COPY package*.json ./
 RUN npm ci --omit=dev
 
-# Copy source code
+# Copy source
 COPY src ./src
 
 # ─────────────────────────────────────────────
-# Stage 2 — Runtime (Alpine, minimal attack surface)
+# Stage 2 — Runtime
 # ─────────────────────────────────────────────
 FROM node:20-alpine
 
@@ -27,20 +26,20 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Run as non-root
+# Create non-root user
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-USER appuser
 
-# Copy only needed files
+# Copy app files
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/src ./src
 
+# Fix permissions (important)
+RUN chown -R appuser:appgroup /app
+
+USER appuser
+
 EXPOSE 3001
 
-<<<<<<< HEAD
+# ✅ correct CMD
 CMD ["node", "src/index.js"]
-=======
-# Explicit node execution (clearer for Sonar)
-CMD ["src/index.js"]
->>>>>>> 2c238ff (Test 502)
