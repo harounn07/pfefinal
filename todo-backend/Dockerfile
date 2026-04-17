@@ -38,4 +38,9 @@ COPY --from=builder /app/src ./src
 
 EXPOSE 3001
 
+<<<<<<< HEAD
 CMD ["node", "src/index.js"]
+=======
+# Explicit node execution (clearer for Sonar)
+CMD ["src/index.js"]
+>>>>>>> 2c238ff (Test 502)
