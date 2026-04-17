@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 module.exports = function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
 
-  // ── Validate header ─────────────────────────
+  // ── Validate header ─..────────────────────────
   if (!authHeader) {
     return res.status(401).json({ error: 'Authorization header missing' });
   }
