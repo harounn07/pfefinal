@@ -1,0 +1,22 @@
+- name: Setup EC2 instances
+  hosts: app
+  become: true
+
+  tasks:
+
+    - name: Install Docker
+      yum:
+        name: docker
+        state: present
+
+    - name: Start Docker
+      service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Add ec2-user to docker group
+      user:
+        name: ec2-user
+        groups: docker
+        append: yes

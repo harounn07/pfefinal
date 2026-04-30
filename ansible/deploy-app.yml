@@ -1,0 +1,58 @@
+- name: Deploy Docker App
+  hosts: app
+  become: false
+
+  tasks:
+
+    - name: Install Git
+      become: true
+      dnf:
+        name: git
+        state: present
+
+    - name: Install Docker Compose v2 manually
+      become: true
+      shell: |
+        mkdir -p /usr/local/lib/docker/cli-plugins
+        curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 \
+          -o /usr/local/lib/docker/cli-plugins/docker-compose
+        chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+        mkdir -p /usr/libexec/docker/cli-plugins
+        cp /usr/local/lib/docker/cli-plugins/docker-compose /usr/libexec/docker/cli-plugins/docker-compose
+
+    - name: Create app directory
+      become: true
+      file:
+        path: /home/ec2-user/app
+        state: directory
+        owner: ec2-user
+        group: ec2-user
+
+    - name: Fix ownership
+      become: true
+      file:
+        path: /home/ec2-user/app
+        owner: ec2-user
+        group: ec2-user
+        recurse: yes
+
+    - name: Clone project repo
+      git:
+        repo: "https://github.com/harounn07/pfefinal.git"
+        dest: /home/ec2-user/app
+        force: yes
+
+    - name: Stop old compose
+      command: docker compose down --remove-orphans
+      args:
+        chdir: /home/ec2-user/app
+      ignore_errors: yes
+
+    - name: Force remove containers
+      shell: docker rm -f $(docker ps -aq) || true
+
+    - name: Run docker compose
+      command: docker compose up -d --build
+      args:
+        chdir: /home/ec2-user/app
