@@ -46,7 +46,7 @@ jobs:
         docker push $ECR_REGISTRY/pfefinal-backend:latest
 
     # ─────────────────────────────
-    # 5. Build & push frontend
+    # 5. Build & push frontendd
     # ─────────────────────────────
     - name: Build & push frontend
       run: |
