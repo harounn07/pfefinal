@@ -46,7 +46,7 @@ jobs:
         docker push $ECR_REGISTRY/pfefinal-backend:latest
 
     # ─────────────────────────────
-    # 5. Build & push frontendd
+    # 5. Build & push frontend
     # ─────────────────────────────
     - name: Build & push frontend
       run: |
@@ -54,28 +54,25 @@ jobs:
         docker push $ECR_REGISTRY/pfefinal-frontend:latest
 
     # ─────────────────────────────
-    # 6. Deploy to EC2
+    # 6. Deploy via Bastion (ProxyJump)
     # ─────────────────────────────
-    - name: Deploy on EC2 via Bastion
+    - name: Deploy via Bastion
       uses: appleboy/ssh-action@v1.0.3
       with:
-       host: ${{ secrets.EC2_HOST }}   # bastion
-       username: ${{ secrets.EC2_USER }}
-       key: ${{ secrets.EC2_SSH_KEY }}
-       script: |
+        host: 10.0.11.140                 # private EC2
+        username: ec2-user
+        key: ${{ secrets.EC2_SSH_KEY }}
 
-        echo "== SSH to private instance =="
+        proxy_host: ${{ secrets.EC2_HOST }}   # bastion
+        proxy_username: ec2-user
+        proxy_key: ${{ secrets.EC2_SSH_KEY }}
 
-        ssh -o StrictHostKeyChecking=no ec2-user@10.0.11.140 << 'EOF'
+        script: |
+          cd /home/ec2-user/app
 
-        cd /home/ec2-user/app
+          aws ecr get-login-password --region eu-north-1 | \
+          docker login --username AWS --password-stdin $ECR_REGISTRY
 
-        aws ecr get-login-password --region eu-north-1 | \
-        docker login --username AWS --password-stdin 367560037937.dkr.ecr.eu-north-1.amazonaws.com
-
-        docker compose pull
-        docker compose down
-        docker compose up -d
-
-        EOF
-          
+          docker compose pull
+          docker compose down
+          docker compose up -d
