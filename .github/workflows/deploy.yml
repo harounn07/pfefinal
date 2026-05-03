@@ -56,18 +56,26 @@ jobs:
     # ─────────────────────────────
     # 6. Deploy to EC2
     # ─────────────────────────────
-    - name: Deploy on EC2
+    - name: Deploy on EC2 via Bastion
       uses: appleboy/ssh-action@v1.0.3
       with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key: ${{ secrets.EC2_SSH_KEY }}
-        script: |
-          cd /home/ec2-user/app
+       host: ${{ secrets.EC2_HOST }}   # bastion
+       username: ${{ secrets.EC2_USER }}
+       key: ${{ secrets.EC2_SSH_KEY }}
+       script: |
 
-          aws ecr get-login-password --region eu-north-1 | \
-          docker login --username AWS --password-stdin $ECR_REGISTRY
+        echo "== SSH to private instance =="
 
-          docker compose pull
-          docker compose down
-          docker compose up -d
+        ssh -o StrictHostKeyChecking=no ec2-user@10.0.11.140 << 'EOF'
+
+        cd /home/ec2-user/app
+
+        aws ecr get-login-password --region eu-north-1 | \
+        docker login --username AWS --password-stdin 367560037937.dkr.ecr.eu-north-1.amazonaws.com
+
+        docker compose pull
+        docker compose down
+        docker compose up -d
+
+        EOF
+          
