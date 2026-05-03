@@ -2,6 +2,9 @@
   hosts: app
   become: false
 
+  vars_files:
+    - secrets.yml
+
   tasks:
 
     - name: Install Git
@@ -42,6 +45,25 @@
         repo: "https://github.com/harounn07/pfefinal.git"
         dest: /home/ec2-user/app
         force: yes
+
+    
+    - name: Create .env file from Vault
+      become: true
+      copy:
+        dest: /home/ec2-user/app/.env
+        owner: ec2-user
+        group: ec2-user
+        content: |
+          PORT=3001
+          DB_HOST={{ db_host }}
+          DB_PORT={{ db_port }}
+          DB_USER={{ db_user }}
+          DB_PASSWORD={{ db_password }}
+          DB_NAME={{ db_name }}
+          DB_SSL={{ db_ssl }}
+          JWT_SECRET={{ jwt_secret }}
+          JWT_EXPIRES_IN={{ jwt_expires_in }}
+          CORS_ORIGIN={{ cors_origin }}
 
     - name: Stop old compose
       command: docker compose down --remove-orphans
