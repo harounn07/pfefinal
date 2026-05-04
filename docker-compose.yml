@@ -28,7 +28,7 @@ services:
     networks:
       - todo-net
 
-  # ── Frontend ─────────────────────────────
+  # ── Frontendd ─────────────────────────────
   frontend:
     image: ${ECR_REGISTRY}/pfefinal-frontend:latest
     container_name: todo-frontend
