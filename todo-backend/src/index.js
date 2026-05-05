@@ -40,7 +40,7 @@ app.get('/health', async (req, res) => {
 
 app.use('/api/auth', authRouter);
 
-// ── PROTECTED ROUTES ──────────────────────────────
+// ── PROTECTED ROUTES ─────────────────────────────
 app.use('/api/todos', authMiddleware, todosRouter);
 
 // ── 404 HANDLER ───────────────────────────────────
