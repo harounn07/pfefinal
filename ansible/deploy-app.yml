@@ -13,18 +13,7 @@
         name: git
         state: present
 
-    - name: Install Docker Compose v2 manually
-      become: true
-      shell: |
-        mkdir -p /usr/local/lib/docker/cli-plugins
-        curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 \
-          -o /usr/local/lib/docker/cli-plugins/docker-compose
-        chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
-
-        mkdir -p /usr/libexec/docker/cli-plugins
-        cp /usr/local/lib/docker/cli-plugins/docker-compose /usr/libexec/docker/cli-plugins/docker-compose
-
-    - name: Create app directory
+    - name: Ensure app directory exists
       become: true
       file:
         path: /home/ec2-user/app
@@ -32,22 +21,14 @@
         owner: ec2-user
         group: ec2-user
 
-    - name: Fix ownership
-      become: true
-      file:
-        path: /home/ec2-user/app
-        owner: ec2-user
-        group: ec2-user
-        recurse: yes
-
     - name: Clone project repo
       git:
         repo: "https://github.com/harounn07/pfefinal.git"
         dest: /home/ec2-user/app
+        version: main
         force: yes
 
-    
-    - name: Create .env file from Vault
+    - name: Create .env file
       become: true
       copy:
         dest: /home/ec2-user/app/.env
@@ -55,6 +36,8 @@
         group: ec2-user
         content: |
           PORT=3001
+          ECR_REGISTRY=367560037937.dkr.ecr.eu-north-1.amazonaws.com
+          TAG=latest
           DB_HOST={{ db_host }}
           DB_PORT={{ db_port }}
           DB_USER={{ db_user }}
@@ -65,16 +48,20 @@
           JWT_EXPIRES_IN={{ jwt_expires_in }}
           CORS_ORIGIN={{ cors_origin }}
 
-    - name: Stop old compose
-      command: docker compose down --remove-orphans
+    - name: Login to ECR
+      shell: |
+        aws ecr get-login-password --region eu-north-1 | \
+        docker login --username AWS --password-stdin 367560037937.dkr.ecr.eu-north-1.amazonaws.com
+
+    - name: Pull latest images
+      command: docker compose pull
       args:
         chdir: /home/ec2-user/app
-      ignore_errors: yes
 
-    - name: Force remove containers
-      shell: docker rm -f $(docker ps -aq) || true
-
-    - name: Run docker compose
-      command: docker compose up -d --build
+    - name: Restart containers
+      command: docker compose up -d --force-recreate
       args:
         chdir: /home/ec2-user/app
+
+    - name: Cleanup old images
+      shell: docker image prune -af

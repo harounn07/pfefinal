@@ -4,7 +4,7 @@ services:
 
   # ── Backend ─────────────────────────────
   backend:
-    image: ${ECR_REGISTRY}/pfefinal-backend:latest
+    image: ${ECR_REGISTRY}/pfefinal-backend:${TAG}
     container_name: todo-backend
     restart: unless-stopped
 
@@ -13,14 +13,12 @@ services:
 
     environment:
       PORT: 3001
-
       DB_HOST: ${DB_HOST}
       DB_PORT: 5432
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_SSL: "true"
-
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: 7d
       CORS_ORIGIN: "*"
@@ -30,7 +28,7 @@ services:
 
   # ── Frontend ─────────────────────────────
   frontend:
-    image: ${ECR_REGISTRY}/pfefinal-frontend:latest
+    image: ${ECR_REGISTRY}/pfefinal-frontend:${TAG}
     container_name: todo-frontend
     restart: unless-stopped
 
@@ -59,6 +57,7 @@ services:
     networks:
       - todo-net
 
+# ── Network ───────────────────────────────
 networks:
   todo-net:
     driver: bridge

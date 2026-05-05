@@ -13,7 +13,7 @@ const pool = new Pool({
     : false
 });
 
-// Connection successs
+// Connection success
 (async () => {
   try {
     await pool.query('SELECT 1');
