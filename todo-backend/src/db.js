@@ -14,9 +14,14 @@ const pool = new Pool({
 });
 
 // Connection success
-pool.on('connect', () => {
-  console.log('[DB] Connected to PostgreSQL');
-});
+(async () => {
+  try {
+    await pool.query('SELECT 1');
+    console.log('[DB] PostgreSQL READY ✅');
+  } catch (err) {
+    console.error('[DB] Connection failed ❌', err.message);
+  }
+})();
 
 // Better error handling
 pool.on('error', (err) => {
