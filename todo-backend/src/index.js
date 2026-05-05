@@ -14,33 +14,28 @@ const PORT = process.env.PORT || 3001;
 const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173';
 
 app.use(cors({
-origin: corsOrigin === '*' ? true : corsOrigin,
-methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  origin: corsOrigin === '*' ? true : corsOrigin,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
 }));
 
 app.use(express.json());
 
 // ── PUBLIC ROUTES ─────────────────────────────────
 app.get('/health', async (req, res) => {
-try {
-await pool.query('SELECT 1');
-res.json({
-status: 'ok',
-timestamp: new Date().toISOString(),
-});
-} catch (err) {
-console.error('[HEALTH] DB check failed:', err.message);
-res.status(503).json({
-status: 'error',
-error: 'Database unreachable',
-timestamp: new Date().toISOString(),
-});
-}
-});
-
-// 🔥 TEST ROUTE (for CI/CD validation)
-app.get('/test', (req, res) => {
-res.send("AUTO DEPLOY FINAL TEST");
+  try {
+    await pool.query('SELECT 1');
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error('[HEALTH] DB check failed:', err.message);
+    res.status(503).json({
+      status: 'error',
+      error: 'Database unreachable',
+      timestamp: new Date().toISOString(),
+    });
+  }
 });
 
 app.use('/api/auth', authRouter);
@@ -50,22 +45,23 @@ app.use('/api/todos', authMiddleware, todosRouter);
 
 // ── 404 HANDLER ───────────────────────────────────
 app.use((req, res) => {
-res.status(404).json({
-error: `Route ${req.method} ${req.path} not found`,
-});
+  res.status(404).json({
+    error: `Route ${req.method} ${req.path} not found`,
+  });
 });
 
 /* istanbul ignore next -- global error handler, safety net */
 app.use((err, req, res, next) => {
-console.error('[Unhandled error]', err);
-res.status(500).json({
-error: 'Internal server error',
-});
+  console.error('[Unhandled error]', err);
+  res.status(500).json({
+    error: 'Internal server error',
+  });
 });
 
 /* istanbul ignore next -- DB init only runs at startup */
 async function initDB() {
-await pool.query(`     CREATE TABLE IF NOT EXISTS users (
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
       id            SERIAL PRIMARY KEY,
       email         TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
@@ -73,7 +69,8 @@ await pool.query(`     CREATE TABLE IF NOT EXISTS users (
     );
   `);
 
-await pool.query(`     CREATE TABLE IF NOT EXISTS todos (
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS todos (
       id         SERIAL PRIMARY KEY,
       title      TEXT NOT NULL,
       completed  BOOLEAN NOT NULL DEFAULT FALSE,
@@ -82,31 +79,34 @@ await pool.query(`     CREATE TABLE IF NOT EXISTS todos (
     );
   `);
 
-console.log('[DB] Schema ready');
+  console.log('[DB] Schema ready');
 }
 
 /* istanbul ignore next -- server startup, not testable in unit tests */
 if (process.env.NODE_ENV !== 'test') {
-app.listen(PORT, '0.0.0.0', () => {
-console.log(`[Server] Listening on port ${PORT}`);
-});
+  // Start the server first so health checks work
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`[Server] Listening on port ${PORT}`);
+  });
 
-(async function retryInitDB(attempts = 5, delay = 3000) {
-for (let i = 1; i <= attempts; i++) {
-try {
-await initDB();
-return;
-} catch (err) {
-console.error(`[DB] Init attempt ${i}/${attempts} failed:`, err.message);
-if (i < attempts) {
-console.log(`[DB] Retrying in ${delay / 1000}s...`);
-await new Promise((r) => setTimeout(r, delay));
-} else {
-console.error('[DB] All init attempts failed. Server running but DB unavailable.');
-}
-}
-}
-})();
+  // Then try to init DB (with retries)
+  (async function retryInitDB(attempts = 5, delay = 3000) {
+    for (let i = 1; i <= attempts; i++) {
+      try {
+        await initDB();
+        return;
+      } catch (err) {
+        console.error(`[DB] Init attempt ${i}/${attempts} failed:`, err.message);
+        if (i < attempts) {
+          console.log(`[DB] Retrying in ${delay / 1000}s...`);
+          await new Promise((r) => setTimeout(r, delay));
+        } else {
+          console.error('[DB] All init attempts failed. Server running but DB unavailable.');
+        }
+      }
+    }
+  })();
 }
 
+// ── EXPORT FOR TESTING ────────────────────────────
 module.exports = app;
