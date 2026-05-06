@@ -1,84 +1,85 @@
 name: Deploy to AWS EC2
 
 on:
- push:
-  branches:
-  - main
+  push:
+    branches:
+      - main
 
 env:
- AWS_REGION: eu-north-1
- ECR_REGISTRY: 367560037937.dkr.ecr.eu-north-1.amazonaws.com
+  AWS_REGION: eu-north-1
+  ECR_REGISTRY: 367560037937.dkr.ecr.eu-north-1.amazonaws.com
 
 jobs:
- deploy:
-  runs-on: ubuntu-latest
+  deploy:
+    runs-on: ubuntu-latest
 
-  steps:
-  # 1. Checkout
-  - name: Checkout code
-    uses: actions/checkout@v4
+    steps:
 
-  # 2. AWS credentials
-  - name: Configure AWS credentials
-    uses: aws-actions/configure-aws-credentials@v4
-    with:
-      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      aws-region: ${{ env.AWS_REGION }}
+    # 1. Checkout
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-  # 3. Login to ECR
-  - name: Login to Amazon ECR
-    uses: aws-actions/amazon-ecr-login@v2
+    # 2. AWS credentials
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
 
-  # 4. Set TAG (commit SHA)
-  - name: Set image tag
-    run: echo "TAG=${GITHUB_SHA}" >> $GITHUB_ENV
+    # 3. Login to ECR
+    - name: Login to Amazon ECR
+      uses: aws-actions/amazon-ecr-login@v2
 
-  # 5. Build & push backend
-  - name: Build & push backend
-    run: |
-      docker build -t $ECR_REGISTRY/pfefinal-backend:$TAG ./todo-backend
-      docker push $ECR_REGISTRY/pfefinal-backend:$TAG
+    # 4. Set TAG
+    - name: Set image tag
+      run: echo "TAG=${{ github.sha }}" >> $GITHUB_ENV
 
-  # 6. Build & push frontend
-  - name: Build & push frontend
-    run: |
-      docker build -t $ECR_REGISTRY/pfefinal-frontend:$TAG ./todo-frontend
-      docker push $ECR_REGISTRY/pfefinal-frontend:$TAG
+    # 5. Backend
+    - name: Build & push backend
+      run: |
+        docker build -t $ECR_REGISTRY/pfefinal-backend:${{ github.sha }} ./todo-backend
+        docker push $ECR_REGISTRY/pfefinal-backend:${{ github.sha }}
 
-  # 7. Deploy to EC2
-  - name: Deploy to EC2 via Bastion
-    uses: appleboy/ssh-action@v1.0.3
-    with:
-      host: 10.0.11.140
-      username: ec2-user
-      key: ${{ secrets.EC2_SSH_KEY }}
+    # 6. Frontend
+    - name: Build & push frontend
+      run: |
+        docker build -t $ECR_REGISTRY/pfefinal-frontend:${{ github.sha }} ./todo-frontend
+        docker push $ECR_REGISTRY/pfefinal-frontend:${{ github.sha }}
 
-      proxy_host: ${{ secrets.EC2_HOST }}
-      proxy_username: ec2-user
-      proxy_key: ${{ secrets.EC2_SSH_KEY }}
+    # 7. Deploy
+    - name: Deploy via Bastion
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: 10.0.11.140
+        username: ec2-user
+        key: ${{ secrets.EC2_SSH_KEY }}
 
-      script: |
-        echo "=== CONNECTED TO EC2 ==="
+        proxy_host: ${{ secrets.EC2_HOST }}
+        proxy_username: ec2-user
+        proxy_key: ${{ secrets.EC2_SSH_KEY }}
 
-        cd /home/ec2-user/app
+        script: |
+          set -e
 
-        echo "=== UPDATE TAG IN .env ==="
-        sed -i "s/^TAG=.*/TAG=${GITHUB_SHA}/" .env || echo "TAG=${GITHUB_SHA}" >> .env
+          echo "== DEPLOY START =="
 
-        echo "=== LOGIN TO ECR ==="
-        aws ecr get-login-password --region eu-north-1 | \
-        docker login --username AWS --password-stdin $ECR_REGISTRY
+          export ECR_REGISTRY=367560037937.dkr.ecr.eu-north-1.amazonaws.com
+          export TAG=${{ github.sha }}
 
-        echo "=== PULL NEW IMAGES ==="
-        docker compose pull
+          cd /home/ec2-user/app
 
-        echo "=== RESTART CONTAINERS ==="
-        docker compose down
-        docker compose up -d --force-recreate
+          echo "== ECR LOGIN =="
+          aws ecr get-login-password --region eu-north-1 | \
+          docker login --username AWS --password-stdin $ECR_REGISTRY
 
-        echo "=== CLEAN OLD IMAGES ==="
-        docker image prune -af
+          echo "== CLEAN OLD CONTAINERS =="
+          docker rm -f todo-backend todo-frontend todo-nginx || true
 
-        echo "=== DONE ==="
+          echo "== PULL NEW IMAGES =="
+          docker compose pull
 
+          echo "== START CONTAINERS =="
+          docker compose up -d --remove-orphans
+
+          echo "== DONE =="

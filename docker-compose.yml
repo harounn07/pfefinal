@@ -1,12 +1,10 @@
-version: "3.9"
-
 services:
 
-  # ── Backend ─────────────────────────────
   backend:
     image: ${ECR_REGISTRY}/pfefinal-backend:${TAG}
     container_name: todo-backend
     restart: unless-stopped
+    pull_policy: always
 
     env_file:
       - .env
@@ -26,11 +24,11 @@ services:
     networks:
       - todo-net
 
-  # ── Frontend ─────────────────────────────
   frontend:
     image: ${ECR_REGISTRY}/pfefinal-frontend:${TAG}
     container_name: todo-frontend
     restart: unless-stopped
+    pull_policy: always
 
     depends_on:
       - backend
@@ -38,7 +36,6 @@ services:
     networks:
       - todo-net
 
-  # ── Nginx ────────────────────────────────
   nginx:
     image: nginx:1.27-alpine
     container_name: todo-nginx
@@ -57,7 +54,6 @@ services:
     networks:
       - todo-net
 
-# ── Network ───────────────────────────────
 networks:
   todo-net:
     driver: bridge
