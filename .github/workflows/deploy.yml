@@ -67,7 +67,7 @@ jobs:
           export ECR_REGISTRY=367560037937.dkr.ecr.eu-north-1.amazonaws.com
           export TAG=${{ github.sha }}
 
-          cd /home/ec2-user/app
+          cd /home/ec2-user/pfefinal
 
           echo "== ECR LOGIN =="
           aws ecr get-login-password --region eu-north-1 | \
