@@ -15,7 +15,7 @@ jobs:
 
     steps:
 
-    # 1. Checkoutt
+    # 1. Checkout
     - name: Checkout code
       uses: actions/checkout@v4
 
@@ -31,66 +31,55 @@ jobs:
     - name: Login to Amazon ECR
       uses: aws-actions/amazon-ecr-login@v2
 
-    # 4. Set TAG (commit SHA)
+    # 4. Set TAG
     - name: Set image tag
       run: echo "TAG=${{ github.sha }}" >> $GITHUB_ENV
 
-    # 5. Build & push backend (SHA tag + latest tag)
+    # 5. Backend
     - name: Build & push backend
       run: |
         docker build -t $ECR_REGISTRY/pfefinal-backend:${{ github.sha }} ./todo-backend
         docker push $ECR_REGISTRY/pfefinal-backend:${{ github.sha }}
-        docker tag $ECR_REGISTRY/pfefinal-backend:${{ github.sha }} $ECR_REGISTRY/pfefinal-backend:latest
-        docker push $ECR_REGISTRY/pfefinal-backend:latest
 
-    # 6. Build & push frontend (SHA tag + latest tag)
+    # 6. Frontendd
     - name: Build & push frontend
       run: |
         docker build -t $ECR_REGISTRY/pfefinal-frontend:${{ github.sha }} ./todo-frontend
         docker push $ECR_REGISTRY/pfefinal-frontend:${{ github.sha }}
-        docker tag $ECR_REGISTRY/pfefinal-frontend:${{ github.sha }} $ECR_REGISTRY/pfefinal-frontend:latest
-        docker push $ECR_REGISTRY/pfefinal-frontend:latest
 
-    # 7. Deploy to EC2 via Bastion
+    # 7. Deploy
     - name: Deploy via Bastion
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: 10.0.11.140
         username: ec2-user
         key: ${{ secrets.EC2_SSH_KEY }}
+
         proxy_host: ${{ secrets.EC2_HOST }}
         proxy_username: ec2-user
         proxy_key: ${{ secrets.EC2_SSH_KEY }}
+
         script: |
           set -e
 
-          echo "=== DEPLOY START ==="
+          echo "== DEPLOY START =="
 
-          # These are expanded by GitHub Actions BEFORE sending to EC2
           export ECR_REGISTRY=367560037937.dkr.ecr.eu-north-1.amazonaws.com
           export TAG=${{ github.sha }}
 
           cd /home/ec2-user/app
 
-          echo "=== ECR LOGIN ==="
+          echo "== ECR LOGIN =="
           aws ecr get-login-password --region eu-north-1 | \
-            docker login --username AWS --password-stdin \
-            367560037937.dkr.ecr.eu-north-1.amazonaws.com
+          docker login --username AWS --password-stdin $ECR_REGISTRY
 
-          echo "=== STOP & REMOVE OLD CONTAINERS ==="
-          docker compose down --remove-orphans || true
-          docker rm -f todo-backend todo-frontend todo-nginx 2>/dev/null || true
+          echo "== CLEAN OLD CONTAINERS =="
+          docker rm -f todo-backend todo-frontend todo-nginx || true
 
-          echo "=== PULL NEW IMAGES FROM ECR ==="
+          echo "== PULL NEW IMAGES =="
           docker compose pull
 
-          echo "=== START NEW CONTAINERS ==="
-          docker compose up -d
+          echo "== START CONTAINERS =="
+          docker compose up -d --remove-orphans
 
-          echo "=== CLEAN OLD IMAGES ==="
-          docker image prune -af
-
-          echo "=== VERIFY RUNNING CONTAINERS ==="
-          docker ps
-
-          echo "=== DEPLOY DONE ==="
+          echo "== DONE =="
