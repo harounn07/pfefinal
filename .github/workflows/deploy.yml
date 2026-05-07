@@ -83,3 +83,40 @@ jobs:
           docker compose up -d --remove-orphans
 
           echo "== DONE =="
+
+    # 7. Deploy to EC2_B
+    - name: Deploy via Bastion
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: 10.0.12.49
+        username: ec2-user
+        key: ${{ secrets.EC2_SSH_KEY }}
+
+        proxy_host: ${{ secrets.EC2_HOST }}
+        proxy_username: ec2-user
+        proxy_key: ${{ secrets.EC2_SSH_KEY }}
+
+        script: |
+          set -e
+
+          echo "== DEPLOY START =="
+
+          export ECR_REGISTRY=367560037937.dkr.ecr.eu-north-1.amazonaws.com
+          export TAG=${{ github.sha }}
+
+          cd /home/ec2-user/pfefinal
+
+          echo "== ECR LOGIN =="
+          aws ecr get-login-password --region eu-north-1 | \
+          docker login --username AWS --password-stdin $ECR_REGISTRY
+
+          echo "== CLEAN OLD CONTAINERS =="
+          docker rm -f todo-backend todo-frontend todo-nginx || true
+
+          echo "== PULL NEW IMAGES =="
+          docker compose pull
+
+          echo "== START CONTAINERS =="
+          docker compose up -d --remove-orphans
+
+          echo "== DONE =="      
