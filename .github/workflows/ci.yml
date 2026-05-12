@@ -68,26 +68,42 @@ jobs:
           image-ref: 'pfefinal-frontend'
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
-        # ── DISCORD SUCCESS NOTIFICATION ─────────────
+          ignorefile: .trivyignore
+
+      # ── DISCORD SUCCESS EMBED ─────────────────
       - name: Discord Success Notification
         if: success()
-        uses: Ilshidur/action-discord@master
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        uses: sarisia/actions-status-discord@v1
         with:
-          args: |
-            ✅ DevSecOps Pipeline Passed
-            Repository: ${{ github.repository }}
-            Branch: ${{ github.ref_name }}
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          title: "✅ DevSecOps Pipeline Passed"
+          description: |
+            The CI/CD pipeline completed successfully.
 
-      # ── DISCORD FAILURE NOTIFICATION ─────────────
+            • Repository: `${{ github.repository }}`
+            • Branch: `${{ github.ref_name }}`
+            • Triggered by: `${{ github.actor }}`
+            • Commit: `${{ github.sha }}`
+          color: 0x28A745
+          username: "PFE DevSecOps"
+          avatar_url: https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png
+
+      # ── DISCORD FAILURE EMBED ─────────────────
       - name: Discord Failure Notification
         if: failure()
-        uses: Ilshidur/action-discord@master
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        uses: sarisia/actions-status-discord@v1
         with:
-          args: |
-            ❌ DevSecOps Pipeline Failed
-            Repository: ${{ github.repository }}
-            Branch: ${{ github.ref_name }}
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          title: "❌ DevSecOps Pipeline Failed"
+          description: |
+            One or more pipeline stages failed.
+
+            • Repository: `${{ github.repository }}`
+            • Branch: `${{ github.ref_name }}`
+            • Triggered by: `${{ github.actor }}`
+            • Commit: `${{ github.sha }}`
+
+            Review GitHub Actions logs for diagnostics.
+          color: 0xDC3545
+          username: "PFE DevSecOps"
+          avatar_url: https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png
