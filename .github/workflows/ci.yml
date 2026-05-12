@@ -68,3 +68,26 @@ jobs:
           image-ref: 'pfefinal-frontend'
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
+        # ── DISCORD SUCCESS NOTIFICATION ─────────────
+      - name: Discord Success Notification
+        if: success()
+        uses: Ilshidur/action-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          args: |
+            ✅ DevSecOps Pipeline Passed
+            Repository: ${{ github.repository }}
+            Branch: ${{ github.ref_name }}
+
+      # ── DISCORD FAILURE NOTIFICATION ─────────────
+      - name: Discord Failure Notification
+        if: failure()
+        uses: Ilshidur/action-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          args: |
+            ❌ DevSecOps Pipeline Failed
+            Repository: ${{ github.repository }}
+            Branch: ${{ github.ref_name }}
