@@ -19,7 +19,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # 2. AWS credentials
+    # 2. AWS credentials_
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
