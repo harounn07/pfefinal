@@ -16,7 +16,7 @@
     - name: Ensure app directory exists
       become: true
       file:
-        path: /home/ec2-user/app
+        path: /home/ec2-user/pfefinal
         state: directory
         owner: ec2-user
         group: ec2-user
@@ -24,14 +24,14 @@
     - name: Clone project repo
       git:
         repo: "https://github.com/harounn07/pfefinal.git"
-        dest: /home/ec2-user/app
+        dest: /home/ec2-user/pfefinal
         version: main
         force: yes
 
     - name: Create .env file
       become: true
       copy:
-        dest: /home/ec2-user/app/.env
+        dest: /home/ec2-user/pfefinal/.env
         owner: ec2-user
         group: ec2-user
         content: |
@@ -56,12 +56,12 @@
     - name: Pull latest images
       command: docker compose pull
       args:
-        chdir: /home/ec2-user/app
+        chdir: /home/ec2-user/pfefinal
 
     - name: Restart containers
       command: docker compose up -d --force-recreate
       args:
-        chdir: /home/ec2-user/app
+        chdir: /home/ec2-user/pfefinal
 
     - name: Cleanup old images
       shell: docker image prune -af
