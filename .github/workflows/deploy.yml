@@ -59,6 +59,10 @@ jobs:
         proxy_username: ec2-user
         proxy_key: ${{ secrets.EC2_SSH_KEY }}
 
+        timeout: 60s
+        command_timeout: 20m
+        script_stop: true 
+
         script: |
           set -e
 
@@ -95,6 +99,10 @@ jobs:
         proxy_host: ${{ secrets.EC2_HOST }}
         proxy_username: ec2-user
         proxy_key: ${{ secrets.EC2_SSH_KEY }}
+
+        timeout: 60s
+        command_timeout: 20m
+        script_stop: true
 
         script: |
           set -e
