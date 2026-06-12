@@ -9,7 +9,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --include=dev
 
-# ─────────────────────────────────────────────
+# ────────────────────────────────────────────
 # Stage 2 — Build
 # ─────────────────────────────────────────────
 FROM node:22-alpine3.21 AS builder
